@@ -39,8 +39,8 @@ int main() {
     pinMode(pinSCK, OUTPUT);
     digitalWrite(pinSCK, LOW);
 
-    const long offset = 324432;
-    const double factor = 0.00296326;
+    const long offset = 563887;
+    const float factor = 0.00108898;
 
     while (true) {
         long reading = readHx711(pinDT, pinSCK);
