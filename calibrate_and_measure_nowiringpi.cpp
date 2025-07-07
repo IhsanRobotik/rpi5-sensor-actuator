@@ -65,8 +65,8 @@ void calibrate(gpiod_line* dt, gpiod_line* sck, int samples, double &offset, dou
 
 int main() {
     const char* chipname = "gpiochip0";
-    int dt_pin = 27;
-    int sck_pin = 22;
+    int dt_pin = 15;
+    int sck_pin = 16;
 
     gpiod_chip* chip = gpiod_chip_open_by_name(chipname);
     if (!chip) return 1;
