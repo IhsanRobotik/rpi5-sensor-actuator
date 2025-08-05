@@ -1,7 +1,10 @@
 #include <iostream>
 #include <wiringPi.h>
 
-long readHx711(int pinDT = 16, int pinSCK = 1) {
+int pinDT = 29;
+int pinSCK = 28;
+
+long readHx711(int pinDT = pinDT, int pinSCK = pinSCK) {
     long count = 0;
     unsigned int timeout = 0;
 
@@ -62,9 +65,6 @@ void calibrate(int pinDT, int pinSCK, int samples, double &offset, double &scale
 
 int main() {
     wiringPiSetup();
-
-    int pinDT = 16;
-    int pinSCK = 1;
 
     pinMode(pinDT, INPUT);
     pinMode(pinSCK, OUTPUT);

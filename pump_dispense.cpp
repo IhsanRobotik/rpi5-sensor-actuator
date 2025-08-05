@@ -1,3 +1,4 @@
+
 #include <wiringPi.h>
 #include <softPwm.h>
 #include <iostream>
@@ -6,17 +7,21 @@
 #include <cstdlib>
 #include <algorithm>
 
-#define DT_PIN 16         // HX711 DT pin
-#define SCK_PIN 1        // HX711 SCK pin
+#define DT_PIN 29        // HX711 DT pin
+#define SCK_PIN 28        // HX711 SCK pin
 
 // Assign PWM pins for each feeder (change as needed)
-#define COFFEE_PWM_PIN 15
-#define SUGAR_PWM_PIN 9
-#define CREAMER_PWM_PIN 7
-#define WATER_PWM_PIN 0
+#define WATER_PWM_PIN 26
+#define SUGAR_PWM_PIN 31
+#define COFFEE_PWM_PIN 10
+#define CREAMER_PWM_PIN 11   
 
-const long OFFSET = 319620;
-const float SCALE = 0.00117325;
+#define RELAY_PIN 27
+
+const long OFFSET = 357864;
+const float SCALE = 0.0010998;
+
+double printWeight = 0; 
 
 long readHx711(int pinDT = DT_PIN, int pinSCK = SCK_PIN) {
     long count = 0;
@@ -53,6 +58,12 @@ double readWeight() {
 }
 
 void run_pwm_feeder(int pwm_pin, double setpoint, const std::string& label) {
+    int max_pwm = 30; // default max
+    if (pwm_pin == COFFEE_PWM_PIN) max_pwm = 40;
+    else if (pwm_pin == SUGAR_PWM_PIN) max_pwm = 40;
+    else if (pwm_pin == CREAMER_PWM_PIN) max_pwm = 40;
+    else if (pwm_pin == WATER_PWM_PIN) max_pwm = 33;
+
     if (setpoint <= 0) {
         std::cout << "Setpoint for " << label << " is zero or negative, skipping.\n";
         return;
@@ -77,7 +88,7 @@ void run_pwm_feeder(int pwm_pin, double setpoint, const std::string& label) {
     double target_weight = initial_weight + setpoint;
 
     double Kp = 10.0; // reduce from 20.0
-    int min_pwm = 30;
+    int min_pwm = 20;
 
     while (true) {
         double current = readWeight();
@@ -87,23 +98,11 @@ void run_pwm_feeder(int pwm_pin, double setpoint, const std::string& label) {
             break; 
         } 
 
-        int pwm_value = std::clamp(static_cast<int>(Kp * error), min_pwm, 100);
+        int pwm_value = std::clamp(static_cast<int>(Kp * error), min_pwm, max_pwm);
         softPwmWrite(pwm_pin, pwm_value);
-        std::cout << "\rCurrent: " << current << " Target: " << target_weight << "PWM" << pwm_value << "      " << std::flush;
+        std::cout << "\rCurrent: " << current << " Target: " << target_weight << " PWM: " << pwm_value << "   " << std::flush;
         // delay(50);
     }
-
-    // while (true) {
-    //     double current = readWeight();
-    //     std::cout << "\rCurrent: " << current << " Target: " << target_weight << "      " << std::flush;
-    //     if (current >= target_weight) {
-    //         std::cout << "\nTarget reached for " << label << "!\n";
-    //         break;
-    //     }
-    //     softPwmWrite(pwm_pin, 80); // 80% duty cycle
-    //     delay(50);
-    // }
-
 
     softPwmWrite(pwm_pin, 0); // Stop PWM
     softPwmStop(pwm_pin);
@@ -119,18 +118,37 @@ int main() {
     digitalWrite(SCK_PIN, LOW);
 
     double coffee, sugar, creamer, water;
-    std::cout << "Enter amount to dispense (coffee, sugar, creamer, water): ";
-    std::cin >> coffee >> sugar >> creamer >> water;
-    std::cin.clear();
-    std::cin.ignore(10000, '\n');
+    std::cout << "Enter amount to dispense (coffee, sugar, creamer, water): \n";
+    std::cin >> coffee >> sugar >> creamer >> water; 
+    std::cout.flush();
 
-    run_pwm_feeder(COFFEE_PWM_PIN, coffee, "Coffee");
-    sleep(1);
-    run_pwm_feeder(SUGAR_PWM_PIN, sugar, "Sugar");
-    sleep(1);
-    run_pwm_feeder(CREAMER_PWM_PIN, creamer, "Creamer");
-    sleep(1);
-    run_pwm_feeder(WATER_PWM_PIN, water, "Water");
+    if (coffee > 0) {
+        std::cout << "step:coffee\n";
+        std::cout.flush();
+        run_pwm_feeder(COFFEE_PWM_PIN, coffee, "Coffee");
+        sleep(1);
+    }
 
+    if (sugar > 0) {
+        std::cout << "step:sugar\n";
+        std::cout.flush();
+        run_pwm_feeder(SUGAR_PWM_PIN, sugar, "Sugar");
+        sleep(1);
+    }
+
+    if (creamer > 0) {
+        std::cout << "step:creamer\n";
+        std::cout.flush();
+        run_pwm_feeder(CREAMER_PWM_PIN, creamer, "Creamer");
+        sleep(1);
+    }
+
+    if (water > 0) {
+        std::cout << "step:water\n";
+        std::cout.flush();
+        run_pwm_feeder(WATER_PWM_PIN, water, "Water");
+    }
+    
     return 0;
+
 }
